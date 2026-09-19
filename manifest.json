@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Pixiv 浏览记录",
+  "version": "1.0.0",
+  "description": "在 pixiv 网页版自动记录看过的作品，随时在侧边面板回看、搜索、管理。",
+  "permissions": ["storage"],
+  "host_permissions": ["https://www.pixiv.net/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://www.pixiv.net/*"],
+      "js": ["content/core.js", "content/recorder.js", "content/panel.js"],
+      "css": ["content/panel.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Pixiv 浏览记录（Shift+H 开关面板）"
+  },
+  "icons": {
+    "16": "assets/icon16.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
+  }
+}

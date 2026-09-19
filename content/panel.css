@@ -1,0 +1,12 @@
+/* 仅样式化 host 元素本身；closed shadow 内部样式由 panel.js 内嵌 <style> 管理。
+   注意：pointer-events:none 会沿继承传入 shadow 树，面板内部已在
+   .pxv-panel 上显式声明 pointer-events:auto 覆盖继承（T8 审查修订）。 */
+#pxv-history-host {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 360px;
+  height: 100vh; /* .pxv-panel 的 height:100% 依赖此声明 */
+  z-index: 2147483647;
+  pointer-events: none; /* 面板未覆盖处不挡 pixiv 页面点击 */
+}

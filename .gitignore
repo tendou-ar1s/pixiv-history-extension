@@ -1,0 +1,9 @@
+# OS / editor
+Thumbs.db
+.DS_Store
+*.swp
+
+# packaging
+*.zip
+*.crx
+*.pem
