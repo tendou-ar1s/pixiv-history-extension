@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
   'use strict';
   if (window.__pxvRecorderLoaded) return; // 防扩展重载/更新时重复注入
   window.__pxvRecorderLoaded = true;
@@ -43,9 +43,14 @@
     const tryOnce = () => {
       if (settled || token !== waitToken) { mo.disconnect(); clearTimeout(fallback); return; }
       const meta = C.extractMetadata(document);
-      if (meta.title && meta.author) { settle(); record(illustId, meta); return; }
-      if (Date.now() - started > 5000) { settle(); record(illustId, meta); return; } // 降级落盘
-      mo.observe(document.body, { childList: true, subtree: true });
+      // 主图 <img>（i.pximg.net）通常晚于标题/作者挂载；等它出现才落盘，
+      // 否则封面会回落到 og:image（embed.pixiv.net，右键新标签页打开会变下载）
+      const ready = meta.title && meta.author && meta.thumb;
+      if (ready || Date.now() - started > 8000) {
+        settle(); record(illustId, meta);
+        return;
+      }
+      mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
     };
     function settle() {
       settled = true;
@@ -53,13 +58,13 @@
       clearTimeout(timer);
       clearTimeout(fallback);
     }
-    // 兜底：即使再无 DOM 变动，5 秒后也结束等待（降级落盘）。
+    // 兜底：即使再无 DOM 变动，8 秒后也结束等待（降级落盘）。
     // 必须独立于防抖 timer：观察器回调会 clearTimeout(timer)，若与兜底共用
     // 一个句柄，首个 DOM 变动（如 content script 自身注入面板宿主）就会清掉
     // 兜底，元数据始终不全的静态页面将永久滞留、永不降级落盘
     // （Task 10 真机验收实测缺陷：8 秒后仍无记录，任意一次变动才触发）。
-    const fallback = setTimeout(() => { tryOnce(); }, 5000);
-    mo.observe(document.body, { childList: true, subtree: true });
+    const fallback = setTimeout(() => { tryOnce(); }, 8000);
+    mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
   }
 
   async function record(illustId, meta) {
