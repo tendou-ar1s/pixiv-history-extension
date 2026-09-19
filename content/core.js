@@ -43,9 +43,22 @@
       }
     } catch (e) {}
     try {
-      const og = doc.querySelector('meta[property="og:image"]');
-      const c = og && og.getAttribute('content');
-      if (c) out.thumb = c;
+      // 优先取页面主图的真实 i.pximg.net URL（与官方页面缩略图同源，
+      // "新标签页打开图像"可直接显示）；og:image 可能指向 embed.pixiv.net
+      // 的 attachment 响应，直接打开会变成下载，仅作兜底。
+      let best = null;
+      for (const img of doc.querySelectorAll('img[src*="i.pximg.net/"], img[srcset*="i.pximg.net/"]')) {
+        const s = img.getAttribute('src') || '';
+        if (/i\.pximg\.net\/(img-master|c\/|img\/)/.test(s) && !/\/(square|custom)\//.test(s)) { best = s; break; }
+      }
+      if (best) {
+        // srcset 常带更大尺寸变体，取最大的 1200Master 或保持 src
+        out.thumb = best;
+      } else {
+        const og = doc.querySelector('meta[property="og:image"]');
+        const c = og && og.getAttribute('content');
+        if (c) out.thumb = c;
+      }
     } catch (e) {}
     try {
       const seen = new Set();

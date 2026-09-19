@@ -28,10 +28,11 @@
   // ---- 元数据提取 ----
   const FAKE_ARTWORK_HTML = `<!DOCTYPE html><html><head>
 <meta property="og:title" content="OG兜底标题">
-<meta property="og:image" content="https://i.pximg.net/c/250x250/img-master.jpg">
+<meta property="og:image" content="https://embed.pixiv.net/decorate.php?illust_id=1">
 </head><body>
 <a href="/users/67890"><img src="a.jpg" alt="山田太郎"></a>
 <div><h1>  夜の桜  </h1></div>
+<img src="https://i.pximg.net/c/600x1200_90_a2_g5/img-master/img/2026/01/01/00/00/00/123456_p0_master1200.jpg">
 <div>
   <a href="/tags/東方/artworks">東方</a>
   <a href="/tags/風景/artworks">風景</a>
@@ -45,8 +46,15 @@
     window.assertEqual(m.title, '夜の桜');
     window.assertEqual(m.author, '山田太郎');
     window.assertEqual(m.authorId, '67890');
-    window.assertEqual(m.thumb, 'https://i.pximg.net/c/250x250/img-master.jpg');
+    window.assertEqual(m.thumb, 'https://i.pximg.net/c/600x1200_90_a2_g5/img-master/img/2026/01/01/00/00/00/123456_p0_master1200.jpg',
+      '封面应优先取页面主图 i.pximg.net，而非 embed.pixiv.net 的 og:image');
     window.assertEqual(m.tags, ['東方', '風景']);
+  });
+  window.test('extractMetadata: 无页面主图时 og:image 兜底', () => {
+    const html = FAKE_ARTWORK_HTML.replace(/<img src="https:\/\/i\.pximg\.net[^>]*>/, '');
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    window.assertEqual(C.extractMetadata(doc).thumb,
+      'https://embed.pixiv.net/decorate.php?illust_id=1');
   });
   window.test('extractMetadata: 无 h1 时 og:title 兜底', () => {
     const html = FAKE_ARTWORK_HTML.replace(/<div><h1>.*?<\/h1><\/div>/, '');
