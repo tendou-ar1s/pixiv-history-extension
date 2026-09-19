@@ -57,10 +57,6 @@
     .pxv-clear { border:1px solid #ddd; background:#fff; color:#666; border-radius:6px;
       padding:4px 10px; cursor:pointer; font-size:12px; }
     .pxv-clear:hover { color:#e33; border-color:#e33; }
-    .pxv-clear-row input { width:130px; padding:3px 8px; border:1px solid #ddd;
-      border-radius:6px; font-size:12px; margin-right:6px; }
-    .pxv-clear-row input.err { border-color:#e33; }
-    .pxv-cancel { border:0; background:none; color:#0096fa; cursor:pointer; font-size:12px; }
     .pxv-toast { position:absolute; left:50%; transform:translateX(-50%); top:8px;
       background:rgba(0,0,0,.75); color:#fff; font-size:12px; padding:4px 12px;
       border-radius:14px; opacity:0; transition:opacity .3s; pointer-events:none; }
@@ -123,7 +119,7 @@
     del.title = '删除该条';
     del.addEventListener('click', e => { e.stopPropagation(); removeEntry(entry.illustId); });
     li.appendChild(del);
-    li.addEventListener('click', () => { location.assign(entry.url); });
+    li.addEventListener('click', () => { window.open(entry.url, '_blank'); });
     return li;
   }
 
@@ -200,28 +196,11 @@
     searchTimer = setTimeout(render, 150);
   });
 
-  // ---- 清空全部（键入「清空」确认） ----
+  // ---- 清空历史（直接清空，无确认步骤） ----
   function renderClearRow() {
     clearRow.textContent = '';
-    const btn = el('button', 'pxv-clear', '清空全部');
-    btn.addEventListener('click', () => {
-      clearRow.textContent = '';
-      const input = el('input');
-      input.placeholder = '输入「清空」确认';
-      const cancel = el('button', 'pxv-cancel', '取消');
-      input.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-          if (input.value.trim() === '清空') { clearAll(); renderClearRow(); }
-          else { input.classList.add('err'); input.value = ''; }
-        } else if (e.key === 'Escape') {
-          renderClearRow();
-        }
-      });
-      cancel.addEventListener('click', renderClearRow);
-      clearRow.appendChild(input);
-      clearRow.appendChild(cancel);
-      input.focus();
-    });
+    const btn = el('button', 'pxv-clear', '清空历史');
+    btn.addEventListener('click', clearAll);
     clearRow.appendChild(btn);
   }
 
