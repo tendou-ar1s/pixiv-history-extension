@@ -1,4 +1,4 @@
-﻿(() => {
+(() => {
   'use strict';
   if (window.__pxvRecorderLoaded) return; // 防扩展重载/更新时重复注入
   window.__pxvRecorderLoaded = true;
@@ -43,13 +43,19 @@
     const tryOnce = () => {
       if (settled || token !== waitToken) { mo.disconnect(); clearTimeout(fallback); return; }
       const meta = C.extractMetadata(document);
-      // 主图 <img>（i.pximg.net）通常晚于标题/作者挂载；等它出现才落盘，
-      // 否则封面会回落到 og:image（embed.pixiv.net，右键新标签页打开会变下载）
-      const ready = meta.title && meta.author && meta.thumb;
-      if (ready || Date.now() - started > 8000) {
-        settle(); record(illustId, meta);
+      // 标题+作者就绪即基本就绪；封面缺失（如被其他脚本接管渲染、主图尚未
+      // 挂载）时经官方同源接口补全一次，拿到即落盘，避免傻等兜底超时。
+      const ready = meta.title && meta.author;
+      const thumbOk = meta.thumb && /^https:\/\/i\.pximg\.net\//.test(meta.thumb);
+      if (ready && thumbOk) { settle(); record(illustId, meta); return; }
+      if (ready) {
+        settle();
+        C.resolveThumb(illustId).then(u => { if (u) meta.thumb = u; })
+          .catch(() => {})
+          .then(() => record(illustId, meta));
         return;
       }
+      if (Date.now() - started > 8000) { settle(); record(illustId, meta); return; } // 降级落盘
       mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
     };
     function settle() {

@@ -183,6 +183,35 @@
     restore();
   });
 
+  // ---- resolveThumb：DOM 无封面时经 pixiv 同源接口兜底 ----
+  function fakeFetch(payload, opts = {}) {
+    let requested = null;
+    const fn = async (url) => {
+      requested = url;
+      if (opts.reject) throw new Error('network down');
+      return { ok: opts.ok !== false, json: async () => payload };
+    };
+    fn.requested = () => requested;
+    return fn;
+  }
+  window.test('resolveThumb: 请求同源 /ajax/illust 并取 urls.small', async () => {
+    const f = fakeFetch({ body: { urls: { small: 'https://i.pximg.net/c/250x250_80_a2/img-master/img/2026/a.jpg' } } });
+    const t = await C.resolveThumb('123', f);
+    window.assertEqual(t, 'https://i.pximg.net/c/250x250_80_a2/img-master/img/2026/a.jpg');
+    window.assertMatches(f.requested(), /\/ajax\/illust\/123/, '应请求官方同源作品信息接口');
+  });
+  window.test('resolveThumb: 无 urls.small 时回落 body.url', async () => {
+    const f = fakeFetch({ body: { url: 'https://i.pximg.net/c/250x250_80_a2/img-master/img/2026/b.jpg' } });
+    window.assertEqual(await C.resolveThumb('123', f),
+      'https://i.pximg.net/c/250x250_80_a2/img-master/img/2026/b.jpg');
+  });
+  window.test('resolveThumb: 非 i.pximg.net 域名 / 请求失败时返回 null 且不抛错', async () => {
+    const f1 = fakeFetch({ body: { urls: { small: 'https://embed.pixiv.net/artwork.php?illust_id=1' } } });
+    window.assertEqual(await C.resolveThumb('123', f1), null, 'embed 域名不可作为封面');
+    const f2 = fakeFetch(null, { reject: true });
+    window.assertEqual(await C.resolveThumb('123', f2), null, '网络失败应安静返回 null');
+  });
+
   // ---- 端到端：模拟 recorder.record 完整写入流 ----
   window.test('端到端: 记录→去重置顶→持久化', async () => {
     const restore = useFakeStorage();

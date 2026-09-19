@@ -115,6 +115,24 @@
     return run;
   }
 
+  // 兜底：DOM 无法取得 i.pximg.net 封面时，向 pixiv 官方同源作品信息接口
+  // （/ajax/illust/{id}）请求一次。返回可直接显示的 i.pximg.net 缩略图 URL；
+  // 任何失败（网络/非 2xx/非 i.pximg.net 域名）一律安静返回 null，不抛错。
+  async function resolveThumb(illustId, fetchImpl) {
+    const f = fetchImpl || (typeof fetch !== 'undefined' ? fetch : null);
+    if (!f) return null;
+    try {
+      const res = await f('/ajax/illust/' + illustId);
+      if (!res || !res.ok) return null;
+      const data = await res.json();
+      const b = data && data.body;
+      const url = (b && b.urls && b.urls.small) || (b && b.url) || null;
+      return (url && /^https:\/\/i\.pximg\.net\//.test(url)) ? url : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   const storage = {
     backend: (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) || null,
     async get(key, fallback) {
@@ -128,5 +146,5 @@
     }
   };
 
-  window.PxvCore = { matchArtworkPath, extractMetadata, mergeEntry, relativeTime, createRecorderGate, enqueueWrite, storage };
+  window.PxvCore = { matchArtworkPath, extractMetadata, mergeEntry, relativeTime, createRecorderGate, enqueueWrite, resolveThumb, storage };
 })();
